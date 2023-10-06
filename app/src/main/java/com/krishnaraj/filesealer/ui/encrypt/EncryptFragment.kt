@@ -1,13 +1,11 @@
-package com.krishnaraj.filesealer.ui.home
+package com.krishnaraj.filesealer.ui.encrypt
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import android.app.Activity
 import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.widget.Button
@@ -15,7 +13,7 @@ import com.krishnaraj.filesealer.R
 import com.krishnaraj.filesealer.databinding.FragmentEncryptBinding
 
 
-class HomeFragment : Fragment() {
+class EncryptFragment : Fragment() {
 
     private var _binding: FragmentEncryptBinding? = null
 
@@ -23,13 +21,16 @@ class HomeFragment : Fragment() {
     // onDestroyView.
     private val binding get() = _binding!!
 
+    // get key text box
+
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         val homeViewModel =
-            ViewModelProvider(this).get(HomeViewModel::class.java)
+            ViewModelProvider(this).get(EncryptViewModel::class.java)
 
         _binding = FragmentEncryptBinding.inflate(inflater, container, false)
         val root: View = binding.root
@@ -59,13 +60,17 @@ class HomeFragment : Fragment() {
         startActivityForResult(intent, PICK_FILE_REQUEST_CODE)
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == PICK_FILE_REQUEST_CODE && resultCode == RESULT_OK) {
             val selectedFileUri = data?.data
             // Now you have the URI of the selected file, you can proceed with encryption.
-            // Example: val filePath = selectedFileUri?.path
+            val filePath = selectedFileUri?.path
+            // get key from key textbox
+
+
         }
     }
 

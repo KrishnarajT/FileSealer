@@ -1,15 +1,14 @@
-package com.krishnaraj.filesealer.ui.gallery
+package com.krishnaraj.filesealer.ui.decrypt
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.krishnaraj.filesealer.databinding.FragmentDecryptBinding
 
-class GalleryFragment : Fragment() {
+class DecryptFragment : Fragment() {
 
     private var _binding: FragmentDecryptBinding? = null
 
@@ -23,7 +22,7 @@ class GalleryFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         val galleryViewModel =
-            ViewModelProvider(this).get(GalleryViewModel::class.java)
+            ViewModelProvider(this).get(DecryptViewModel::class.java)
 
         _binding = FragmentDecryptBinding.inflate(inflater, container, false)
         val root: View = binding.root
