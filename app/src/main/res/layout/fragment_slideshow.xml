@@ -22,7 +22,7 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <Button
-            android:id="@+id/button"
+            android:id="@+id/open_file_btn"
             android:layout_width="127dp"
             android:layout_height="40dp"
             android:layout_marginTop="20dp"
@@ -44,7 +44,7 @@
             app:flow_wrapMode="aligned"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/button"
+            app:layout_constraintTop_toBottomOf="@+id/open_file_btn"
             app:layout_wrapBehaviorInParent="horizontal_only" />
 
         <androidx.constraintlayout.widget.Guideline
