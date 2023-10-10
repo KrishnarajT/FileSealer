@@ -21,7 +21,6 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.textview.MaterialTextView
 import com.krishnaraj.filesealer.R
 import com.krishnaraj.filesealer.databinding.FragmentEncryptBinding
@@ -33,8 +32,6 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
 import kotlin.system.exitProcess
 
-
-private const val CHARSET_NAME = "UTF-8"
 
 private const val TRANSFORMATION = "AES"
 private const val KEY_SIZE_BITS = 256
@@ -71,7 +68,6 @@ class EncryptFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        val homeViewModel = ViewModelProvider(this).get(EncryptViewModel::class.java)
 
         _binding = FragmentEncryptBinding.inflate(inflater, container, false)
         val root: View = binding.root
@@ -337,7 +333,7 @@ class EncryptFragment : Fragment() {
         )
     }
 
-    fun getFileName(contentResolver: ContentResolver, uri: Uri): String? {
+    private fun getFileName(contentResolver: ContentResolver, uri: Uri): String? {
         var fileName: String? = null
         val cursor: Cursor? = contentResolver.query(uri, null, null, null, null)
         cursor?.use {

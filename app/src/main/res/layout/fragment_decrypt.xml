@@ -84,11 +84,11 @@
         app:layout_constraintTop_toBottomOf="@+id/selected_file_txt" />
 
     <Button
-        android:id="@+id/encrypt_btn"
+        android:id="@+id/decrypt_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Encrypt!"
+        android:text="Decrypt!"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
@@ -103,6 +103,6 @@
         android:textSize="20sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/encrypt_btn" />
+        app:layout_constraintTop_toBottomOf="@+id/decrypt_btn" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
