@@ -17,6 +17,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.EditText
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -24,11 +25,22 @@ import androidx.fragment.app.Fragment
 import com.google.android.material.textview.MaterialTextView
 import com.krishnaraj.filesealer.R
 import com.krishnaraj.filesealer.databinding.FragmentEncryptBinding
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.io.File
+import java.io.UnsupportedEncodingException
+import java.security.InvalidKeyException
 import java.security.Key
+import java.security.NoSuchAlgorithmException
+import java.security.Security
+import javax.crypto.BadPaddingException
 import javax.crypto.Cipher
+import javax.crypto.IllegalBlockSizeException
 import javax.crypto.KeyGenerator
+import javax.crypto.NoSuchPaddingException
 import javax.crypto.SecretKey
+import javax.crypto.SecretKeyFactory
+import javax.crypto.ShortBufferException
+import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.system.exitProcess
 
@@ -45,7 +57,7 @@ class EncryptFragment : Fragment() {
     private val binding get() = _binding!!
 
     // declare textbox
-    private lateinit var keyTextBox: MaterialTextView
+    private lateinit var keyTextBox: EditText
 
     // declare button
     private lateinit var openFileButton: Button
@@ -74,7 +86,7 @@ class EncryptFragment : Fragment() {
 
         // get the open file button.
         openFileButton = root.findViewById(R.id.open_file_btn)
-        keyTextBox = root.findViewById(R.id.enter_key_txt)
+        keyTextBox = root.findViewById(R.id.enter_key_txt_box)
         openFileButton.setOnClickListener {
             openFileExplorer()
         }
@@ -145,11 +157,63 @@ class EncryptFragment : Fragment() {
         }
     }
 
+    fun encrypt_bouncyCastle(strToEncrypt: String, secret_key: String): String {
+        Security.addProvider(BouncyCastleProvider())
+        var keyBytes: ByteArray
+        Log.d("EncryptFragment", strToEncrypt)
+        Log.d("EncryptFragment", secret_key)
+        try {
+            keyBytes = secret_key.toByteArray(charset("UTF8"))
+            val skey = SecretKeySpec(keyBytes, "AES")
+            val input = strToEncrypt.toByteArray(charset("UTF8"))
+
+            synchronized(Cipher::class.java) {
+                val cipher = Cipher.getInstance("AES/ECB/PKCS7Padding")
+                cipher.init(Cipher.ENCRYPT_MODE, skey)
+
+                val cipherText = ByteArray(cipher.getOutputSize(input.size))
+                var ctLength = cipher.update(
+                    input, 0, input.size,
+                    cipherText, 0
+                )
+                ctLength += cipher.doFinal(cipherText, ctLength)
+                Log.d("EncryptFragment", "ctLength: $ctLength")
+                Log.d("EncryptFragment", "cipherText: $cipherText")
+                return Base64.encodeToString(cipherText, Base64.DEFAULT)
+            }
+        } catch (uee: UnsupportedEncodingException) {
+            uee.printStackTrace()
+            Log.d("EncryptedFragment", "UnsupportedEncodingException: ${uee.message}")
+        } catch (ibse: IllegalBlockSizeException) {
+            ibse.printStackTrace()
+            Log.d("EncryptedFragment", "IllegalBlockSizeException: ${ibse.message}")
+        } catch (bpe: BadPaddingException) {
+            bpe.printStackTrace()
+            Log.d("EncryptedFragment", "BadPaddingException: ${bpe.message}")
+        } catch (ike: InvalidKeyException) {
+            ike.printStackTrace()
+            Log.d("EncryptedFragment", "InvalidKeyException: ${ike.message}")
+        } catch (nspe: NoSuchPaddingException) {
+            nspe.printStackTrace()
+            Log.d("EncryptedFragment", "NoSuchPaddingException: ${nspe.message}")
+        } catch (nsae: NoSuchAlgorithmException) {
+            nsae.printStackTrace()
+            Log.d("EncryptedFragment", "NoSuchAlgorithmException: ${nsae.message}")
+        } catch (e: ShortBufferException) {
+            e.printStackTrace()
+            Log.d("EncryptedFragment", "ShortBufferException: ${e.message}")
+        }
+        return ""
+    }
+
     @SuppressLint("GetInstance")
     fun encrypt(fileContents: String?, encryptionKey: String): String {
         try {
             // Generate a secret key based on the provided encryptionKey
             val secretKey: Key = generateKey(encryptionKey)
+
+            // Log this
+            Log.d("EncryptFragment",  "Secret Key: ${secretKey.hashCode()}")
 
             // Create a Cipher object for AES encryption
             val cipher = Cipher.getInstance(TRANSFORMATION)
@@ -172,29 +236,13 @@ class EncryptFragment : Fragment() {
             return ""
         }
     }
+    private val salt: ByteArray = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08)
+    private val iterationCount = 10000
 
-    private fun generateKey(encryptionKey: String): SecretKey {
-        // Convert the encryptionKey to bytes
-        val keyBytes = encryptionKey.toByteArray(Charsets.UTF_8)
-
-        // Use the keyBytes directly if they are already 256 bits
-        if (keyBytes.size == KEY_SIZE_BITS / 8) {
-            return SecretKeySpec(keyBytes, TRANSFORMATION)
-        }
-
-        // If the keyBytes are less than 256 bits, pad or hash them to achieve the desired length
-        // You might want to use a proper key derivation function (KDF) for more security
-
-        // For example, using SHA-256 for key derivation
-        val keyGenerator = KeyGenerator.getInstance("HmacSHA256")
-        keyGenerator.init(KEY_SIZE_BITS)
-
-        // Generate the key based on keyBytes
-        val secretKey = keyGenerator.generateKey()
-
-        return SecretKeySpec(secretKey.encoded, TRANSFORMATION)
+    private fun generateKey(secretKey: String): SecretKey {
+        val keySpec = SecretKeySpec(secretKey.toByteArray(Charsets.UTF_8), "AES")
+        return keySpec
     }
-
     @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<String>, grantResults: IntArray
@@ -250,7 +298,7 @@ class EncryptFragment : Fragment() {
         if (fileContents != null) {
             try {
                 // Encrypt the file contents
-                encryptedFileContents = encrypt(fileContents, encryptionKey)
+                encryptedFileContents = encrypt_bouncyCastle(fileContents, encryptionKey)
 
                 val contentResolver = this.requireContext().contentResolver
                 val uri = fileUri

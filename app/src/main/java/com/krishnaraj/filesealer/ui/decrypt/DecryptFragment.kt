@@ -26,12 +26,25 @@ import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.textview.MaterialTextView
 import com.krishnaraj.filesealer.R
 import com.krishnaraj.filesealer.databinding.FragmentDecryptBinding
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.io.File
 import java.security.Key
+import java.security.Security
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
+import kotlin.system.exitProcess
+
+import java.io.UnsupportedEncodingException
+import java.security.InvalidKeyException
+import java.security.NoSuchAlgorithmException
+import javax.crypto.BadPaddingException
+import javax.crypto.IllegalBlockSizeException
+import javax.crypto.NoSuchPaddingException
+import javax.crypto.ShortBufferException
 import kotlin.system.exitProcess
 
 private const val TRANSFORMATION = "AES"
@@ -137,6 +150,9 @@ class DecryptFragment : Fragment() {
             // Generate a secret key based on the provided encryptionKey
             val secretKey: Key = generateKey(encryptionKey)
 
+            // log this
+            Log.d("DecryptFragment", "Secret Key: ${secretKey.hashCode()}")
+
             // Create a Cipher object for AES decryption
             val cipher = Cipher.getInstance(TRANSFORMATION)
             cipher.init(Cipher.DECRYPT_MODE, secretKey)
@@ -156,22 +172,12 @@ class DecryptFragment : Fragment() {
             return ""
         }
     }
-
-    private fun generateKey(decryptionKey: String): SecretKey {
-        val keyBytes = decryptionKey.toByteArray(Charsets.UTF_8)
-
-        if (keyBytes.size == KEY_SIZE_BITS / 8) {
-            return SecretKeySpec(keyBytes, TRANSFORMATION)
-        }
-
-        val keyGenerator = KeyGenerator.getInstance("HmacSHA256")
-        keyGenerator.init(KEY_SIZE_BITS)
-
-        val secretKey = keyGenerator.generateKey()
-
-        return SecretKeySpec(secretKey.encoded, TRANSFORMATION)
+    private val salt: ByteArray = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08)
+    private val iterationCount = 10000
+    private fun generateKey(secretKey: String): SecretKey {
+        val keySpec = SecretKeySpec(secretKey.toByteArray(Charsets.UTF_8), "AES")
+        return keySpec
     }
-
     @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<String>, grantResults: IntArray
@@ -196,6 +202,53 @@ class DecryptFragment : Fragment() {
         }
     }
 
+    fun decryptWithAES(key: String, strToDecrypt: String?): String {
+        Security.addProvider(BouncyCastleProvider())
+        var keyBytes: ByteArray
+
+        try {
+            keyBytes = key.toByteArray(charset("UTF8"))
+            val skey = SecretKeySpec(keyBytes, "AES")
+            val input = org.bouncycastle.util.encoders.Base64
+                .decode(strToDecrypt?.trim { it <= ' ' }?.toByteArray(charset("UTF8")))
+
+            synchronized(Cipher::class.java) {
+                val cipher = Cipher.getInstance("AES/ECB/PKCS7Padding")
+                cipher.init(Cipher.DECRYPT_MODE, skey)
+
+                val plainText = ByteArray(cipher.getOutputSize(input.size))
+                var ptLength = cipher.update(input, 0, input.size, plainText, 0)
+                ptLength += cipher.doFinal(plainText, ptLength)
+                val decryptedString = String(plainText)
+                return decryptedString.trim { it <= ' ' }
+            }
+        } catch (uee: UnsupportedEncodingException) {
+            uee.printStackTrace()
+            Log.d("EncryptedFragment", "UnsupportedEncodingException: ${uee.message}")
+        } catch (ibse: IllegalBlockSizeException) {
+            ibse.printStackTrace()
+            Log.d("EncryptedFragment", "IllegalBlockSizeException: ${ibse.message}")
+        } catch (bpe: BadPaddingException) {
+            bpe.printStackTrace()
+            Log.d("EncryptedFragment", "BadPaddingException: ${bpe.message}")
+        } catch (ike: InvalidKeyException) {
+            ike.printStackTrace()
+            Log.d("EncryptedFragment", "InvalidKeyException: ${ike.message}")
+        } catch (nspe: NoSuchPaddingException) {
+            nspe.printStackTrace()
+            Log.d("EncryptedFragment", "NoSuchPaddingException: ${nspe.message}")
+        } catch (nsae: NoSuchAlgorithmException) {
+            nsae.printStackTrace()
+            Log.d("EncryptedFragment", "NoSuchAlgorithmException: ${nsae.message}")
+        } catch (e: ShortBufferException) {
+            e.printStackTrace()
+            Log.d("EncryptedFragment", "ShortBufferException: ${e.message}")
+        }
+
+        return ""
+    }
+
+
     @SuppressLint("Recycle")
     private fun decryptFile() {
         decryptionKey = keyTextBox.text.toString()
@@ -213,7 +266,7 @@ class DecryptFragment : Fragment() {
 
         if (fileContents != null) {
             try {
-                decryptedFileContents = decrypt(fileContents, decryptionKey)
+                decryptedFileContents = decryptWithAES( decryptionKey, fileContents)
 
                 val contentResolver = this.requireContext().contentResolver
                 val uri = fileUri

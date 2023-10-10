@@ -34,4 +34,5 @@ class TextFragment : Fragment() {
         super.onDestroyView()
         _binding = null
     }
+
 }
