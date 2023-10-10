@@ -22,7 +22,6 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.google.android.material.textview.MaterialTextView
 import com.krishnaraj.filesealer.R
 import com.krishnaraj.filesealer.databinding.FragmentEncryptBinding
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -35,12 +34,9 @@ import java.security.Security
 import javax.crypto.BadPaddingException
 import javax.crypto.Cipher
 import javax.crypto.IllegalBlockSizeException
-import javax.crypto.KeyGenerator
 import javax.crypto.NoSuchPaddingException
 import javax.crypto.SecretKey
-import javax.crypto.SecretKeyFactory
 import javax.crypto.ShortBufferException
-import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.system.exitProcess
 
@@ -157,7 +153,7 @@ class EncryptFragment : Fragment() {
         }
     }
 
-    fun encrypt_bouncyCastle(strToEncrypt: String, secret_key: String): String {
+    private fun encrypt_bouncyCastle(strToEncrypt: String, secret_key: String): String {
         Security.addProvider(BouncyCastleProvider())
         var keyBytes: ByteArray
         Log.d("EncryptFragment", strToEncrypt)
@@ -213,7 +209,7 @@ class EncryptFragment : Fragment() {
             val secretKey: Key = generateKey(encryptionKey)
 
             // Log this
-            Log.d("EncryptFragment",  "Secret Key: ${secretKey.hashCode()}")
+            Log.d("EncryptFragment", "Secret Key: ${secretKey.hashCode()}")
 
             // Create a Cipher object for AES encryption
             val cipher = Cipher.getInstance(TRANSFORMATION)
@@ -236,6 +232,7 @@ class EncryptFragment : Fragment() {
             return ""
         }
     }
+
     private val salt: ByteArray = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08)
     private val iterationCount = 10000
 
@@ -243,6 +240,7 @@ class EncryptFragment : Fragment() {
         val keySpec = SecretKeySpec(secretKey.toByteArray(Charsets.UTF_8), "AES")
         return keySpec
     }
+
     @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<String>, grantResults: IntArray
@@ -277,6 +275,36 @@ class EncryptFragment : Fragment() {
 
         // Get the key from the key textbox
         encryptionKey = keyTextBox.text.toString()
+        // if the key is empty then return and show toast
+        if (encryptionKey.isEmpty()) {
+            val message: CharSequence = "Please enter a key."
+
+            // Set a duration of 2 seconds
+            val duration = Toast.LENGTH_SHORT
+
+            val toast = Toast.makeText(context, message, duration)
+            toast.show()
+            return
+        }
+
+
+        // if the encryption key isnt 32 characters long, then turn it into one by repeating the key until it is
+        if (encryptionKey.length < 32) {
+            // get the length of the key
+            val keyLength = encryptionKey.length
+            // get the number of times the key needs to be repeated
+            val repeatKey = 32 / keyLength
+            // repeat the key
+            encryptionKey = encryptionKey.repeat(repeatKey)
+            // get the length of the new key
+            val newKeyLength = encryptionKey.length
+            // get the number of characters that need to be added to the key
+            val addKey = 32 - newKeyLength
+            // add the characters to the key
+            encryptionKey += encryptionKey.substring(0, addKey)
+        }
+        // print the new one
+        Log.d("EncryptFragment", "Encryption Key: $encryptionKey")
 
         // handle if there is no file selected
         if (!this::fileUri.isInitialized) {

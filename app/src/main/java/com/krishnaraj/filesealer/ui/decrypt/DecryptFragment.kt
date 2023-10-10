@@ -23,28 +23,22 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import com.google.android.material.textview.MaterialTextView
 import com.krishnaraj.filesealer.R
 import com.krishnaraj.filesealer.databinding.FragmentDecryptBinding
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.io.File
-import java.security.Key
-import java.security.Security
-import javax.crypto.Cipher
-import javax.crypto.KeyGenerator
-import javax.crypto.SecretKey
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.PBEKeySpec
-import javax.crypto.spec.SecretKeySpec
-import kotlin.system.exitProcess
-
 import java.io.UnsupportedEncodingException
 import java.security.InvalidKeyException
+import java.security.Key
 import java.security.NoSuchAlgorithmException
+import java.security.Security
 import javax.crypto.BadPaddingException
+import javax.crypto.Cipher
 import javax.crypto.IllegalBlockSizeException
 import javax.crypto.NoSuchPaddingException
+import javax.crypto.SecretKey
 import javax.crypto.ShortBufferException
+import javax.crypto.spec.SecretKeySpec
 import kotlin.system.exitProcess
 
 private const val TRANSFORMATION = "AES"
@@ -172,12 +166,14 @@ class DecryptFragment : Fragment() {
             return ""
         }
     }
+
     private val salt: ByteArray = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08)
     private val iterationCount = 10000
     private fun generateKey(secretKey: String): SecretKey {
         val keySpec = SecretKeySpec(secretKey.toByteArray(Charsets.UTF_8), "AES")
         return keySpec
     }
+
     @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<String>, grantResults: IntArray
@@ -252,6 +248,34 @@ class DecryptFragment : Fragment() {
     @SuppressLint("Recycle")
     private fun decryptFile() {
         decryptionKey = keyTextBox.text.toString()
+        // if the decryption key is empty then return and show toast
+        if (decryptionKey.isEmpty()) {
+            val message: CharSequence = "Please enter a decryption key."
+            val duration = Toast.LENGTH_SHORT
+            val toast = Toast.makeText(context, message, duration)
+            toast.show()
+            return
+        }
+
+
+        // if the decryption key isnt 32 characters long, turn it into one by repeating the key until it is
+        if (decryptionKey.length < 32) {
+            // get the length of the key
+            val keyLength = decryptionKey.length
+            // get the number of times the key needs to be repeated
+            val repeatKey = 32 / keyLength
+            // repeat the key
+            decryptionKey = decryptionKey.repeat(repeatKey)
+            // get the length of the new key
+            val newKeyLength = decryptionKey.length
+            // get the number of characters that need to be added to the key
+            val addKey = 32 - newKeyLength
+            // add the characters to the key
+            decryptionKey += decryptionKey.substring(0, addKey)
+        }
+
+        // print it
+        Log.d("DecryptFragment", "Decryption Key: $decryptionKey")
 
         if (!this::fileUri.isInitialized) {
             val message: CharSequence = "No file selected. Please select a file."
@@ -266,7 +290,7 @@ class DecryptFragment : Fragment() {
 
         if (fileContents != null) {
             try {
-                decryptedFileContents = decryptWithAES( decryptionKey, fileContents)
+                decryptedFileContents = decryptWithAES(decryptionKey, fileContents)
 
                 val contentResolver = this.requireContext().contentResolver
                 val uri = fileUri
