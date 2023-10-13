@@ -202,45 +202,6 @@ class EncryptFragment : Fragment() {
         return ""
     }
 
-    @SuppressLint("GetInstance")
-    fun encrypt(fileContents: String?, encryptionKey: String): String {
-        try {
-            // Generate a secret key based on the provided encryptionKey
-            val secretKey: Key = generateKey(encryptionKey)
-
-            // Log this
-            Log.d("EncryptFragment", "Secret Key: ${secretKey.hashCode()}")
-
-            // Create a Cipher object for AES encryption
-            val cipher = Cipher.getInstance(TRANSFORMATION)
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-
-            // Encrypt the fileContents
-            val encryptedBytes = cipher.doFinal(fileContents?.toByteArray(Charsets.UTF_8))
-            val encryptedString = Base64.encodeToString(encryptedBytes, Base64.DEFAULT)
-
-            // print the encrypted string
-            Log.d("EncryptFragment", "Encrypted String: $encryptedString")
-
-            // Convert the encrypted bytes to a Base64-encoded string
-            return encryptedString
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // Handle encryption errors here
-            // log the error using log.e
-            Log.e("EncryptFragment", "Error during Encryption function", e)
-            return ""
-        }
-    }
-
-    private val salt: ByteArray = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08)
-    private val iterationCount = 10000
-
-    private fun generateKey(secretKey: String): SecretKey {
-        val keySpec = SecretKeySpec(secretKey.toByteArray(Charsets.UTF_8), "AES")
-        return keySpec
-    }
-
     @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<String>, grantResults: IntArray
