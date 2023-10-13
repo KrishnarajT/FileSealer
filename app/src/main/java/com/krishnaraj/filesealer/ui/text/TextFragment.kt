@@ -74,7 +74,7 @@ class TextFragment : Fragment() {
         // when the decrypt button is clicked
         decbtn.setOnClickListener {
             // get the text from the output text box
-            val text = output_text_box.text.toString()
+            val text = encryption_text_box.text.toString()
             // get the key from the key text box
             val key = key_text_box.text.toString()
             // decrypt the text with the key
